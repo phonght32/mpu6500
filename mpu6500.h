@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef __NRF24L01_H__
-#define __NRF24L01_H__
+#ifndef __MPU6500_H__
+#define __MPU6500_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -304,4 +304,4 @@ err_code_t mpu6500_auto_calib(mpu6500_handle_t handle);
 }
 #endif
 
-#endif /* __ENCODER_H__ */
+#endif /* __MPU6500_H__ */
