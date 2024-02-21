@@ -29,7 +29,7 @@ extern "C" {
 
 #include "err_code.h"
 
-typedef err_code_t (*mpu6500_func_i2c_recv)(uint8_t *buf_read, uint16_t len);
+typedef err_code_t (*mpu6500_func_i2c_recv)(uint8_t *buf_recv, uint16_t len);
 typedef err_code_t (*mpu6500_func_i2c_send)(uint8_t *buf_send, uint16_t len);
 typedef void (*mpu6500_func_delay)(uint32_t ms);
 
