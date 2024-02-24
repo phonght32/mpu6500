@@ -29,8 +29,8 @@ extern "C" {
 
 #include "err_code.h"
 
-typedef err_code_t (*mpu6500_func_i2c_recv)(uint8_t *buf_recv, uint16_t len);
-typedef err_code_t (*mpu6500_func_i2c_send)(uint8_t *buf_send, uint16_t len);
+typedef err_code_t (*mpu6500_func_i2c_send)(uint8_t reg_addr, uint8_t *buf_send, uint16_t len);
+typedef err_code_t (*mpu6500_func_i2c_recv)(uint8_t reg_addr, uint8_t *buf_recv, uint16_t len);
 typedef void (*mpu6500_func_delay)(uint32_t ms);
 
 /**
@@ -107,8 +107,8 @@ typedef struct {
 	int16_t                     gyro_bias_x;                /*!< Gyroscope bias of x axis */
 	int16_t                     gyro_bias_y;                /*!< Gyroscope bias of y axis */
 	int16_t                     gyro_bias_z;                /*!< Gyroscope bias of z axis */
-	mpu6500_func_i2c_recv       i2c_recv;         			/*!< MPU6500 receive bytes */
 	mpu6500_func_i2c_send       i2c_send;        			/*!< MPU6500 send bytes */
+	mpu6500_func_i2c_recv       i2c_recv;         			/*!< MPU6500 receive bytes */
 	mpu6500_func_delay          delay;                 		/*!< MPU6500 delay function */
 } mpu6500_cfg_t;
 

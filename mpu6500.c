@@ -119,34 +119,12 @@ typedef struct mpu6500 {
 	int16_t                     gyro_bias_x;                /*!< Gyroscope bias of x axis */
 	int16_t                     gyro_bias_y;                /*!< Gyroscope bias of y axis */
 	int16_t                     gyro_bias_z;                /*!< Gyroscope bias of z axis */
-	mpu6500_func_i2c_recv       i2c_recv;         			/*!< MPU6500 receive bytes */
 	mpu6500_func_i2c_send       i2c_send;        			/*!< MPU6500 send bytes */
+	mpu6500_func_i2c_recv       i2c_recv;         			/*!< MPU6500 receive bytes */
 	mpu6500_func_delay          delay;                 		/*!< MPU6500 delay function */
 	float                   	accel_scaling_factor;   	/*!< MPU6500 accelerometer scaling factor */
 	float                   	gyro_scaling_factor;    	/*!< MPU6500 gyroscope scaling factor */
 } mpu6500_t;
-
-static err_code_t mpu6500_i2c_write_reg(mpu6500_handle_t handle, uint8_t reg_addr, uint8_t *buf, uint16_t len)
-{
-	uint8_t buf_send[len + 1];
-
-	buf_send[0] = reg_addr;
-	memcpy(&buf_send[1], buf, len);
-	handle->i2c_send(buf_send, len + 1);
-
-	return ERR_CODE_SUCCESS;
-}
-
-static err_code_t mpu6500_i2c_read_reg(mpu6500_handle_t handle, uint8_t reg_addr, uint8_t *buf, uint16_t len)
-{
-	uint8_t buffer[1];
-
-	buffer[0] = reg_addr | 0x80;
-	handle->i2c_send(buffer, 1);
-	handle->i2c_recv(buf, len);
-
-	return ERR_CODE_SUCCESS;
-}
 
 mpu6500_handle_t mpu6500_init(void)
 {
@@ -227,8 +205,8 @@ err_code_t mpu6500_set_config(mpu6500_handle_t handle, mpu6500_cfg_t config)
 	handle->gyro_bias_x = config.gyro_bias_x;
 	handle->gyro_bias_y = config.gyro_bias_y;
 	handle->gyro_bias_z = config.gyro_bias_z;
-	handle->i2c_recv = config.i2c_recv;
 	handle->i2c_send = config.i2c_send;
+	handle->i2c_recv = config.i2c_recv;
 	handle->delay = config.delay;
 	handle->accel_scaling_factor = accel_scaling_factor;
 	handle->gyro_scaling_factor = gyro_scaling_factor;
@@ -247,35 +225,35 @@ err_code_t mpu6500_config(mpu6500_handle_t handle)
 	/* Reset MPU6500 */
 	uint8_t buffer = 0;
 	buffer = 0x80;
-	mpu6500_i2c_write_reg(handle, MPU6500_PWR_MGMT_1, &buffer, 1);
+	handle->i2c_send(MPU6500_PWR_MGMT_1, &buffer, 1);
 	handle->delay(1);
 
 	/* Configure clock source and sleep mode */
 	buffer = 0;
 	buffer = handle->clksel & 0x07;
 	buffer |= (handle->sleep_mode << 6) & 0x40;
-	mpu6500_i2c_write_reg(handle, MPU6500_PWR_MGMT_1, &buffer, 1);
+	handle->i2c_send(MPU6500_PWR_MGMT_1, &buffer, 1);
 	handle->delay(1);
 
 	/* Configure digital low pass filter */
 	buffer = 0;
 	buffer = handle->dlpf_cfg & 0x07;
-	mpu6500_i2c_write_reg(handle, MPU6500_CONFIG, &buffer, 1);
+	handle->i2c_send(MPU6500_CONFIG, &buffer, 1);
 
 	/* Configure gyroscope range */
 	buffer = 0;
 	buffer = (handle->gfs_sel << 3) & 0x18;
-	mpu6500_i2c_write_reg(handle, MPU6500_GYRO_CONFIG, &buffer, 1);
+	handle->i2c_send(MPU6500_GYRO_CONFIG, &buffer, 1);
 
 	/* Configure accelerometer range */
 	buffer = 0;
 	buffer = (handle->afs_sel << 3) & 0x18;
-	mpu6500_i2c_write_reg(handle, MPU6500_ACCEL_CONFIG, &buffer, 1);
+	handle->i2c_send(MPU6500_ACCEL_CONFIG, &buffer, 1);
 
 	/* Configure sample rate divider */
 	buffer = 0;
 	buffer = 0x04;
-	mpu6500_i2c_write_reg(handle, MPU6500_SMPLRT_DIV, &buffer, 1);
+	handle->i2c_send(MPU6500_SMPLRT_DIV, &buffer, 1);
 
 	/* Configure interrupt and enable bypass.
 	 * Set Interrupt pin active high, push-pull, Clear and read of INT_STATUS,
@@ -283,10 +261,10 @@ err_code_t mpu6500_config(mpu6500_handle_t handle)
 	 * join the I2C bus and can be controlled by master.
 	 */
 	buffer = 0x22;
-	mpu6500_i2c_write_reg(handle, MPU6500_INT_PIN_CFG, &buffer, 1);
+	handle->i2c_send(MPU6500_INT_PIN_CFG, &buffer, 1);
 
 	buffer = 0x01;
-	mpu6500_i2c_write_reg(handle, MPU6500_INT_ENABLE, &buffer, 1);
+	handle->i2c_send(MPU6500_INT_ENABLE, &buffer, 1);
 
 	return ERR_CODE_SUCCESS;
 }
@@ -300,7 +278,7 @@ err_code_t mpu6500_get_accel_raw(mpu6500_handle_t handle, int16_t *raw_x, int16_
 	}
 
 	uint8_t accel_raw_data[6];
-	mpu6500_i2c_read_reg(handle, MPU6500_ACCEL_XOUT_H, accel_raw_data, 6);
+	handle->i2c_recv(MPU6500_ACCEL_XOUT_H, accel_raw_data, 6);
 
 	*raw_x = (int16_t)((accel_raw_data[0] << 8) + accel_raw_data[1]);
 	*raw_y = (int16_t)((accel_raw_data[2] << 8) + accel_raw_data[3]);
@@ -318,7 +296,7 @@ err_code_t mpu6500_get_accel_calib(mpu6500_handle_t handle, int16_t *calib_x, in
 	}
 
 	uint8_t accel_raw_data[6];
-	mpu6500_i2c_read_reg(handle, MPU6500_ACCEL_XOUT_H, accel_raw_data, 6);
+	handle->i2c_recv(MPU6500_ACCEL_XOUT_H, accel_raw_data, 6);
 
 	*calib_x = (int16_t)((accel_raw_data[0] << 8) + accel_raw_data[1]) - handle->accel_bias_x;
 	*calib_y = (int16_t)((accel_raw_data[2] << 8) + accel_raw_data[3]) - handle->accel_bias_y;
@@ -336,7 +314,7 @@ err_code_t mpu6500_get_accel_scale(mpu6500_handle_t handle, float *scale_x, floa
 	}
 
 	uint8_t accel_raw_data[6];
-	mpu6500_i2c_read_reg(handle, MPU6500_ACCEL_XOUT_H, accel_raw_data, 6);
+	handle->i2c_recv(MPU6500_ACCEL_XOUT_H, accel_raw_data, 6);
 
 	*scale_x = (float)((int16_t)((accel_raw_data[0] << 8) + accel_raw_data[1]) - handle->accel_bias_x) * handle->accel_scaling_factor;
 	*scale_y = (float)((int16_t)((accel_raw_data[2] << 8) + accel_raw_data[3]) - handle->accel_bias_y) * handle->accel_scaling_factor;
@@ -354,7 +332,7 @@ err_code_t mpu6500_get_gyro_raw(mpu6500_handle_t handle, int16_t *raw_x, int16_t
 	}
 
 	uint8_t gyro_raw_data[6];
-	mpu6500_i2c_read_reg(handle, MPU6500_GYRO_XOUT_H, gyro_raw_data, 6);
+	handle->i2c_recv(MPU6500_GYRO_XOUT_H, gyro_raw_data, 6);
 
 	*raw_x = (int16_t)((gyro_raw_data[0] << 8) + gyro_raw_data[1]);
 	*raw_y = (int16_t)((gyro_raw_data[2] << 8) + gyro_raw_data[3]);
@@ -372,7 +350,7 @@ err_code_t mpu6500_get_gyro_calib(mpu6500_handle_t handle, int16_t *calib_x, int
 	}
 
 	uint8_t gyro_raw_data[6];
-	mpu6500_i2c_read_reg(handle, MPU6500_GYRO_XOUT_H, gyro_raw_data, 6);
+	handle->i2c_recv(MPU6500_GYRO_XOUT_H, gyro_raw_data, 6);
 
 	*calib_x = (int16_t)((gyro_raw_data[0] << 8) + gyro_raw_data[1]) - handle->gyro_bias_x;
 	*calib_y = (int16_t)((gyro_raw_data[2] << 8) + gyro_raw_data[3]) - handle->gyro_bias_y;
@@ -391,7 +369,7 @@ err_code_t mpu6500_get_gyro_scale(mpu6500_handle_t handle, float *scale_x, float
 	}
 
 	uint8_t gyro_raw_data[6];
-	mpu6500_i2c_read_reg(handle, MPU6500_GYRO_XOUT_H, gyro_raw_data, 6);
+	handle->i2c_recv(MPU6500_GYRO_XOUT_H, gyro_raw_data, 6);
 
 	*scale_x = (float)((int16_t)((gyro_raw_data[0] << 8) + gyro_raw_data[1]) - handle->gyro_bias_x) * handle->gyro_scaling_factor;
 	*scale_y = (float)((int16_t)((gyro_raw_data[2] << 8) + gyro_raw_data[3]) - handle->gyro_bias_y) * handle->gyro_scaling_factor;
