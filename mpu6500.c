@@ -226,14 +226,14 @@ err_code_t mpu6500_config(mpu6500_handle_t handle)
 	uint8_t buffer = 0;
 	buffer = 0x80;
 	handle->i2c_send(MPU6500_PWR_MGMT_1, &buffer, 1);
-	handle->delay(1);
+	handle->delay(10);
 
 	/* Configure clock source and sleep mode */
 	buffer = 0;
 	buffer = handle->clksel & 0x07;
 	buffer |= (handle->sleep_mode << 6) & 0x40;
 	handle->i2c_send(MPU6500_PWR_MGMT_1, &buffer, 1);
-	handle->delay(1);
+	handle->delay(10);
 
 	/* Configure digital low pass filter */
 	buffer = 0;
